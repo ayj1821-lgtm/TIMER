@@ -2,41 +2,52 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap">
 <style>
-/* Layout: one centered column — mode tabs, ring timer, controls, cycle dots, collapsible settings */
+/* Layout: one centered column on a drifting, mode-tinted backdrop — kitchen-timer dial with ticks, tomato tally, settings sheet */
 :root {
-  --bg: #f6f3f1;
+  --bg: #fbf4ef;
   --surface: #ffffff;
-  --fg: #1f1a19;
-  --muted: #6e6462;
-  --line: #e4dcd9;
-  --track: #ece5e2;
-  --focus: #d4482f;
-  --short: #2f8f6b;
-  --long: #3a6fb8;
-  --accent: var(--focus);
+  --glass: rgb(255 255 255 / .72);
+  --fg: #2a1d1a;
+  --muted: #7a6763;
+  --line: #ecdcd5;
+  --track: #f1e4de;
+  --leaf: #3f9a52;
+  --focus: #e5483a;  --focus-2: #ff9a5c;
+  --short: #1f9c74;  --short-2: #8fd9b2;
+  --long:  #3d6ee0;  --long-2:  #9bbcff;
+  --accent: var(--focus); --accent-2: var(--focus-2);
   --on-accent: #ffffff;
-  --font-display: "Space Grotesk", "Noto Sans KR", system-ui, sans-serif;
+  --font-display: "Jua", "Noto Sans KR", system-ui, sans-serif;
+  --font-num: "Space Grotesk", "Noto Sans KR", system-ui, sans-serif;
   --font-body: "Noto Sans KR", system-ui, -apple-system, "Malgun Gothic", sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #161312; --surface: #211c1b; --fg: #f2ecea; --muted: #a59a97;
-    --line: #362f2d; --track: #2e2725;
-    --focus: #ef6a50; --short: #4fbf94; --long: #6c9ce6; --on-accent: #1a1211;
+    --bg: #17110f; --surface: #221a18; --glass: rgb(34 26 24 / .72);
+    --fg: #f6ece8; --muted: #b09f9a; --line: #3a2e2b; --track: #2f2523;
+    --leaf: #5cc173;
+    --focus: #ff6a55; --focus-2: #ffb07a;
+    --short: #45cf9b; --short-2: #a3ecc8;
+    --long:  #6f9bff; --long-2:  #b5cdff;
+    --on-accent: #1b100e;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #161312; --surface: #211c1b; --fg: #f2ecea; --muted: #a59a97;
-  --line: #362f2d; --track: #2e2725;
-  --focus: #ef6a50; --short: #4fbf94; --long: #6c9ce6; --on-accent: #1a1211;
+  --bg: #17110f; --surface: #221a18; --glass: rgb(34 26 24 / .72);
+  --fg: #f6ece8; --muted: #b09f9a; --line: #3a2e2b; --track: #2f2523;
+  --leaf: #5cc173;
+  --focus: #ff6a55; --focus-2: #ffb07a;
+  --short: #45cf9b; --short-2: #a3ecc8;
+  --long:  #6f9bff; --long-2:  #b5cdff;
+  --on-accent: #1b100e;
   color-scheme: dark;
 }
-body[data-mode="focus"] { --accent: var(--focus); }
-body[data-mode="short"] { --accent: var(--short); }
-body[data-mode="long"]  { --accent: var(--long); }
+body[data-mode="focus"] { --accent: var(--focus); --accent-2: var(--focus-2); }
+body[data-mode="short"] { --accent: var(--short); --accent-2: var(--short-2); }
+body[data-mode="long"]  { --accent: var(--long);  --accent-2: var(--long-2); }
 
 * { box-sizing: border-box; }
 body {
@@ -48,119 +59,162 @@ body {
   padding-block: 24px 40px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  transition: background-color .4s;
+  min-height: 100%;
+  overflow-x: hidden;
 }
+
+/* Drifting color blobs behind everything */
+.backdrop { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.blob {
+  position: absolute; border-radius: 50%; filter: blur(70px); opacity: .32;
+  transition: background-color .8s;
+}
+.blob.a { width: 60vmax; height: 60vmax; left: -20vmax; top: -25vmax; background: var(--accent); animation: drift-a 22s ease-in-out infinite alternate; }
+.blob.b { width: 50vmax; height: 50vmax; right: -22vmax; bottom: -20vmax; background: var(--accent-2); animation: drift-b 26s ease-in-out infinite alternate; }
+@keyframes drift-a { to { transform: translate(12vmax, 10vmax) scale(1.1); } }
+@keyframes drift-b { to { transform: translate(-10vmax, -12vmax) scale(.9); } }
+
 .wrap {
-  max-width: 440px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 24px;
+  position: relative; z-index: 1;
+  max-width: 440px; margin: 0 auto;
+  display: flex; flex-direction: column; align-items: center; gap: 22px;
 }
-header { width: 100%; display: flex; justify-content: space-between; align-items: baseline; }
-h1 { font-family: var(--font-display); font-size: 18px; font-weight: 700; margin: 0; letter-spacing: -.01em; }
-.today { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.today b { color: var(--fg); font-weight: 700; }
+header { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 8px; }
+.brand svg { width: 34px; height: 34px; flex: none; }
+body.running .brand svg { animation: wiggle 2.4s ease-in-out infinite; transform-origin: 50% 60%; }
+@keyframes wiggle { 0%, 80%, 100% { transform: rotate(0); } 85% { transform: rotate(-8deg); } 90% { transform: rotate(7deg); } 95% { transform: rotate(-4deg); } }
+h1 { font-family: var(--font-display); font-weight: 400; font-size: 24px; margin: 0; letter-spacing: -.01em; }
+.today {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums;
+  background: var(--glass); border: 1px solid var(--line); border-radius: 999px;
+  padding: 5px 12px 5px 8px; backdrop-filter: blur(8px);
+}
+.today svg { width: 16px; height: 16px; }
+.today b { color: var(--fg); font-family: var(--font-num); font-weight: 700; font-size: 14px; }
 
 .tabs {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+  position: relative; display: grid; grid-template-columns: repeat(3, 1fr);
   width: 100%; padding: 4px; border-radius: 999px;
-  background: var(--track);
+  background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(8px);
+}
+.tab-ind {
+  position: absolute; top: 4px; bottom: 4px; left: 4px;
+  width: calc((100% - 8px) / 3); border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 4px 14px -4px var(--accent);
+  transition: transform .35s cubic-bezier(.3,1.4,.5,1), background-color .4s;
 }
 .tab {
-  font: inherit; font-size: 14px; font-weight: 500;
+  position: relative; z-index: 1;
+  font: inherit; font-family: var(--font-display); font-size: 16px;
   border: 0; border-radius: 999px; padding: 8px 4px;
   background: transparent; color: var(--muted); cursor: pointer;
-  transition: background-color .2s, color .2s;
+  transition: color .25s;
 }
-.tab[aria-selected="true"] { background: var(--surface); color: var(--accent); font-weight: 700; box-shadow: 0 1px 2px rgb(0 0 0 / .08); }
+.tab[aria-selected="true"] { color: var(--on-accent); }
 
-.ring-box { position: relative; width: min(300px, 78vw); aspect-ratio: 1; max-width: 100%; }
-.ring-box svg { width: 100%; height: 100%; transform: rotate(-90deg); display: block; }
-.ring-track { fill: none; stroke: var(--track); stroke-width: 10; }
-.ring-bar { fill: none; stroke: var(--accent); stroke-width: 10; stroke-linecap: round; transition: stroke .4s; }
-.ring-inner {
+/* Dial */
+.dial { position: relative; width: min(320px, 82vw); aspect-ratio: 1; max-width: 100%; }
+.dial::before {
+  content: ""; position: absolute; inset: 9%; border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 24px 60px -24px var(--accent), inset 0 0 0 1px var(--line);
+  transition: box-shadow .6s;
+}
+.dial svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.tick { stroke: var(--line); stroke-width: 1.5; stroke-linecap: round; }
+.tick.major { stroke: var(--muted); stroke-width: 2.2; opacity: .55; }
+.tick.done { stroke: var(--accent); opacity: .9; transition: stroke .4s; }
+.ring-track { fill: none; stroke: var(--track); stroke-width: 12; }
+.ring-bar { fill: none; stroke: url(#grad); stroke-width: 12; stroke-linecap: round; }
+.knob { fill: var(--surface); stroke: var(--accent); stroke-width: 4; transition: stroke .4s; }
+.knob-glow { fill: var(--accent); opacity: .25; transform-box: fill-box; transform-origin: center; }
+body.running .knob-glow { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { transform: scale(1); opacity: .25; } 50% { transform: scale(1.7); opacity: 0; } }
+.grad-a { stop-color: var(--accent-2); transition: stop-color .4s; }
+.grad-b { stop-color: var(--accent); transition: stop-color .4s; }
+
+.dial-inner {
   position: absolute; inset: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 4px; text-align: center;
+  align-items: center; justify-content: center; gap: 6px; text-align: center; padding: 0 22%;
+}
+.chip {
+  font-family: var(--font-display); font-size: 15px;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 2px 12px; border-radius: 999px; transition: color .4s, background-color .4s;
 }
 .time {
-  font-family: var(--font-display); font-weight: 500;
-  font-size: clamp(52px, 17vw, 76px); line-height: 1;
-  letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+  font-family: var(--font-num); font-weight: 500;
+  font-size: clamp(54px, 17vw, 78px); line-height: 1;
+  letter-spacing: -.04em; font-variant-numeric: tabular-nums;
 }
-.label { font-size: 14px; color: var(--muted); }
-.label strong { color: var(--accent); font-weight: 700; }
+.tip { font-size: 13px; color: var(--muted); min-height: 1.5em; }
+.tip.swap { animation: tipIn .5s ease; }
+@keyframes tipIn { from { opacity: 0; transform: translateY(4px); } }
 
-.controls { display: flex; align-items: center; justify-content: center; gap: 16px; }
+.controls { display: flex; align-items: center; justify-content: center; gap: 18px; }
 .btn {
   font: inherit; cursor: pointer; border: 1px solid var(--line);
-  background: var(--surface); color: var(--fg);
+  background: var(--glass); color: var(--fg); backdrop-filter: blur(8px);
   border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  transition: transform .12s, background-color .2s;
 }
+.btn:hover { background: var(--surface); }
+.btn:active { transform: scale(.94); }
 .btn-round { width: 64px; height: 64px; font-size: 13px; flex-direction: column; gap: 2px; padding: 0; }
 .btn-round svg { width: 20px; height: 20px; }
 .btn-round span { font-size: 11px; line-height: 1.2; color: var(--muted); white-space: nowrap; }
 .btn-main {
-  min-width: 132px; height: 60px; padding: 0 24px;
-  background: var(--accent); color: var(--on-accent); border-color: transparent;
-  font-size: 17px; font-weight: 700; transition: background-color .4s, transform .1s;
+  min-width: 148px; height: 64px; padding: 0 26px;
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  color: var(--on-accent); border-color: transparent;
+  font-family: var(--font-display); font-size: 21px;
+  box-shadow: 0 12px 26px -10px var(--accent);
 }
-.btn-main:active { transform: scale(.97); }
+.btn-main:hover { background: linear-gradient(135deg, var(--accent-2), var(--accent)); filter: brightness(1.05); }
+.btn-main svg { width: 20px; height: 20px; }
 .btn:focus-visible, .tab:focus-visible, summary:focus-visible, input:focus-visible {
-  outline: 2px solid var(--accent); outline-offset: 2px;
+  outline: 2px solid var(--accent); outline-offset: 3px;
 }
 
-.cycle { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.dots { display: flex; gap: 8px; }
-.dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--focus); background: transparent; }
-.dot.on { background: var(--focus); }
+/* Tomato tally */
+.cycle { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.tally { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.tally svg { width: 26px; height: 26px; }
+.tomato { --tb: var(--focus); --tl: var(--leaf); --tst: none; --tsh: .35; overflow: visible; }
+.tomato.empty { --tb: transparent; --tl: var(--line); --tst: var(--muted); --tsh: 0; opacity: .6; }
+.tally .fresh { animation: pop .6s cubic-bezier(.3,1.6,.5,1); }
+@keyframes pop { from { transform: scale(0) rotate(-30deg); } }
 .cycle p { margin: 0; font-size: 13px; color: var(--muted); }
 
+/* Settings sheet */
 details {
-  width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  width: 100%; background: var(--glass); border: 1px solid var(--line); border-radius: 18px;
+  backdrop-filter: blur(10px);
 }
 summary {
-  cursor: pointer; padding: 14px 16px; font-weight: 700; font-size: 15px;
+  cursor: pointer; padding: 14px 16px; font-family: var(--font-display); font-size: 17px;
   list-style: none; display: flex; justify-content: space-between; align-items: center;
 }
 summary::-webkit-details-marker { display: none; }
-summary::after { content: "＋"; color: var(--muted); font-weight: 400; }
+summary::after { content: "＋"; color: var(--muted); font-family: var(--font-body); }
 details[open] summary::after { content: "－"; }
 .settings { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 8px; }
-.group-title {
-  margin: 8px 0 0; font-size: 11px; font-weight: 700; letter-spacing: .08em;
-  color: var(--muted);
-}
-.list {
-  list-style: none; margin: 0; padding: 0;
-  background: var(--bg); border-radius: 12px;
-}
-.item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 12px; min-height: 56px;
-}
+.group-title { margin: 8px 0 0; font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--muted); }
+.list { list-style: none; margin: 0; padding: 0; background: var(--bg); border-radius: 12px; }
+.item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; min-height: 56px; }
 .item + .item { border-top: 1px solid var(--line); }
-.swatch {
-  flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--c);
-}
+.swatch { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
 .swatch.ring { background: transparent; border: 2px solid var(--c); }
-.item-label {
-  flex: 1; min-width: 0; font-size: 15px; font-weight: 500; cursor: pointer;
-  display: flex; flex-direction: column; line-height: 1.35;
-}
+.item-label { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; cursor: pointer; display: flex; flex-direction: column; line-height: 1.35; }
 .item-label small { font-size: 12px; font-weight: 400; color: var(--muted); }
-
-.stepper {
-  flex: none; display: flex; align-items: center;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
-  padding: 3px;
-}
+.stepper { flex: none; display: flex; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
 .step {
   width: 30px; height: 30px; border: 0; border-radius: 50%;
   background: transparent; color: var(--muted); cursor: pointer;
-  font: inherit; font-size: 18px; line-height: 1;
-  display: grid; place-items: center;
+  font: inherit; font-size: 18px; line-height: 1; display: grid; place-items: center;
   transition: background-color .15s, color .15s;
 }
 .step:hover { background: var(--track); color: var(--fg); }
@@ -168,83 +222,115 @@ details[open] summary::after { content: "－"; }
 .step:disabled { opacity: .35; cursor: default; background: transparent; }
 .stepper input {
   width: 2.4em; border: 0; background: transparent; color: var(--fg);
-  font-family: var(--font-display); font-size: 17px; font-weight: 500;
+  font-family: var(--font-num); font-size: 17px; font-weight: 500;
   font-variant-numeric: tabular-nums; text-align: right; padding: 0;
   -moz-appearance: textfield; appearance: textfield;
 }
-.stepper input::-webkit-outer-spin-button,
-.stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .suffix { font-size: 12px; color: var(--muted); margin: 0 4px 0 2px; }
-
 .switch {
   flex: none; appearance: none; -webkit-appearance: none; margin: 0;
   width: 44px; height: 26px; border-radius: 999px; cursor: pointer;
   background: var(--line); position: relative; transition: background-color .2s;
 }
 .switch::after {
-  content: ""; position: absolute; top: 3px; left: 3px;
-  width: 20px; height: 20px; border-radius: 50%; background: #fff;
-  box-shadow: 0 1px 3px rgb(0 0 0 / .25); transition: transform .2s;
+  content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / .25); transition: transform .2s;
 }
 .switch:checked { background: var(--accent); }
 .switch:checked::after { transform: translateX(18px); }
 .switch:focus-visible, .step:focus-visible, .link-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-.link-btn {
-  flex: none; font: inherit; font-size: 13px; font-weight: 500;
-  border: 0; background: transparent; color: var(--accent); cursor: pointer;
-  padding: 6px 8px; border-radius: 8px;
-}
+.link-btn { flex: none; font: inherit; font-size: 13px; font-weight: 500; border: 0; background: transparent; color: var(--accent); cursor: pointer; padding: 6px 8px; border-radius: 8px; }
 .link-btn:hover { background: var(--track); }
 .link-btn.danger { color: var(--muted); }
 .link-btn.danger:hover { color: var(--focus); }
 .foot { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; margin-top: 4px; }
 .note { font-size: 12px; color: var(--muted); margin: 0; }
 .kbd { font-size: 12px; color: var(--muted); text-align: center; margin: 0; }
-kbd { font-family: var(--font-display); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); }
+kbd { font-family: var(--font-num); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); }
+
+/* Toast + confetti */
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 20;
+  transform: translate(-50%, 140%); opacity: 0;
+  background: var(--fg); color: var(--bg); font-family: var(--font-display); font-size: 17px;
+  padding: 12px 20px; border-radius: 999px; white-space: nowrap;
+  box-shadow: 0 12px 30px -12px rgb(0 0 0 / .4);
+  transition: transform .45s cubic-bezier(.3,1.4,.5,1), opacity .3s;
+}
+.toast.show { transform: translate(-50%, 0); opacity: 1; }
+#confetti { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 15; pointer-events: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 </style>
 
+<div class="backdrop" aria-hidden="true"><div class="blob a"></div><div class="blob b"></div></div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="tomato" viewBox="0 0 32 32">
+    <path style="fill: var(--tb); stroke: var(--tst); stroke-width: 2; stroke-dasharray: 3 3" d="M16 7c-7.5 0-12.5 4.6-12.5 11S8.7 29 16 29s12.5-4.6 12.5-11S23.5 7 16 7z"/>
+    <ellipse style="fill: #fff; opacity: var(--tsh)" cx="10.5" cy="14" rx="2.6" ry="1.6" transform="rotate(-30 10.5 14)"/>
+    <path style="fill: var(--tl)" d="M16 4.5c.6 0 1 .4 1 1V8l3.2-1.6c.6-.3 1.2.3.9.9L19.6 10l3.3.6c.7.1.8 1 .1 1.3L19 13l-3 1.6L13 13l-4-1.1c-.7-.3-.6-1.2.1-1.3l3.3-.6-1.5-2.7c-.3-.6.3-1.2.9-.9L15 8V5.5c0-.6.4-1 1-1z"/>
+  </symbol>
+</svg>
+
 <div class="wrap">
   <header>
-    <h1>포모도로 타이머</h1>
-    <div class="today">오늘 완료 <b id="todayCount">0</b>회</div>
+    <div class="brand">
+      <svg class="tomato" aria-hidden="true"><use href="#tomato"></use></svg>
+      <h1>포모도로 타이머</h1>
+    </div>
+    <div class="today" title="오늘 완료한 포모도로">
+      <svg class="tomato" aria-hidden="true"><use href="#tomato"></use></svg>
+      오늘 <b id="todayCount">0</b>개
+    </div>
   </header>
 
   <div class="tabs" role="tablist" aria-label="세션 종류">
+    <span class="tab-ind" id="tabInd" aria-hidden="true"></span>
     <button class="tab" role="tab" id="tab-focus" data-mode="focus" aria-selected="true">집중</button>
     <button class="tab" role="tab" id="tab-short" data-mode="short" aria-selected="false">짧은 휴식</button>
     <button class="tab" role="tab" id="tab-long" data-mode="long" aria-selected="false">긴 휴식</button>
   </div>
 
-  <div class="ring-box">
-    <svg viewBox="0 0 220 220" aria-hidden="true">
-      <circle class="ring-track" cx="110" cy="110" r="100"></circle>
-      <circle class="ring-bar" id="ringBar" cx="110" cy="110" r="100"></circle>
+  <div class="dial">
+    <svg viewBox="0 0 240 240" aria-hidden="true">
+      <defs>
+        <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" class="grad-a"></stop>
+          <stop offset="1" class="grad-b"></stop>
+        </linearGradient>
+      </defs>
+      <g id="ticks"></g>
+      <circle class="ring-track" cx="120" cy="120" r="96"></circle>
+      <circle class="ring-bar" id="ringBar" cx="120" cy="120" r="96" transform="rotate(-90 120 120)"></circle>
+      <circle class="knob-glow" id="knobGlow" cx="120" cy="24" r="10"></circle>
+      <circle class="knob" id="knob" cx="120" cy="24" r="8"></circle>
     </svg>
-    <div class="ring-inner">
+    <div class="dial-inner">
+      <span class="chip" id="chip">집중</span>
       <div class="time" id="time" role="timer" aria-live="off">25:00</div>
-      <div class="label" id="label"><strong>집중</strong> · 대기 중</div>
+      <div class="tip" id="tip">한 가지 일에만 집중해요</div>
     </div>
   </div>
 
   <div class="controls">
-    <button class="btn btn-round" id="resetBtn" aria-label="리셋" title="리셋">
+    <button class="btn btn-round" id="resetBtn" aria-label="리셋" title="리셋 (R)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path></svg>
       <span>리셋</span>
     </button>
-    <button class="btn btn-main" id="startBtn">시작</button>
-    <button class="btn btn-round" id="skipBtn" aria-label="건너뛰기" title="건너뛰기">
+    <button class="btn btn-main" id="startBtn"></button>
+    <button class="btn btn-round" id="skipBtn" aria-label="건너뛰기" title="건너뛰기 (S)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l10 7-10 7z"></path><path d="M19 5v14"></path></svg>
       <span>건너뛰기</span>
     </button>
   </div>
 
   <div class="cycle">
-    <div class="dots" id="dots"></div>
+    <div class="tally" id="tally"></div>
     <p id="cycleText">긴 휴식까지 집중 4회 남음</p>
   </div>
 
@@ -318,75 +404,107 @@ kbd { font-family: var(--font-display); border: 1px solid var(--line); border-bo
   <p class="kbd"><kbd>Space</kbd> 시작/일시정지 · <kbd>R</kbd> 리셋 · <kbd>S</kbd> 건너뛰기</p>
 </div>
 
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <script>
 (() => {
   const MODES = { focus: "집중", short: "짧은 휴식", long: "긴 휴식" };
+  const TIPS = {
+    focus: ["한 가지 일에만 집중해요", "알림은 잠시 꺼 두세요", "지금 이 순간에 몰입!", "작게 시작하면 끝까지 가요", "딱 25분만 해 봐요"],
+    short: ["물 한 잔 마셔요", "어깨를 쭉 펴 보세요", "창밖을 잠깐 바라봐요", "심호흡 세 번 해요", "눈을 잠깐 감아요"],
+    long:  ["잠깐 걸어 볼까요?", "간식 먹을 시간!", "음악 한 곡 들어요", "수고했어요, 푹 쉬세요", "스트레칭 한 번 해요"]
+  };
   const STORE_KEY = "pomodoro-v1";
   const $ = id => document.getElementById(id);
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const store = {
     load() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; } },
     save(data) { try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch {} }
   };
-  const todayKey = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-  };
+  const todayKey = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 
   const saved = store.load();
   const settings = Object.assign({ focus: 25, short: 5, long: 15, every: 4, auto: true, sound: true }, saved.settings || {});
   let today = saved.day === todayKey() ? (saved.today || 0) : 0;
 
-  const state = {
-    mode: "focus",
-    cycleDone: 0,            // focus sessions finished in the current long-break cycle
-    remaining: settings.focus * 60 * 1000,
-    endAt: null,             // timestamp while running
-    running: false,
-    tick: null
-  };
+  const state = { mode: "focus", cycleDone: 0, remaining: settings.focus * 60 * 1000, endAt: null, running: false, tick: null };
+  let freshDot = -1;
 
   const persist = () => store.save({ settings, day: todayKey(), today });
   const duration = mode => settings[mode] * 60 * 1000;
 
-  // Ring geometry
-  const R = 100, C = 2 * Math.PI * R;
-  const bar = $("ringBar");
+  // Dial: 60 ticks like a kitchen timer
+  const CX = 120, R = 96, C = 2 * Math.PI * R;
+  const ticksG = $("ticks");
+  const ticks = [];
+  for (let i = 0; i < 60; i++) {
+    const a = (i / 60) * 2 * Math.PI - Math.PI / 2;
+    const major = i % 5 === 0;
+    const r1 = 108, r2 = major ? 117 : 114;
+    const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    l.setAttribute("x1", CX + r1 * Math.cos(a)); l.setAttribute("y1", CX + r1 * Math.sin(a));
+    l.setAttribute("x2", CX + r2 * Math.cos(a)); l.setAttribute("y2", CX + r2 * Math.sin(a));
+    l.setAttribute("class", "tick" + (major ? " major" : ""));
+    ticksG.appendChild(l);
+    ticks.push(l);
+  }
+  const bar = $("ringBar"), knob = $("knob"), glow = $("knobGlow");
   bar.style.strokeDasharray = C;
 
   const fmt = ms => {
     const s = Math.max(0, Math.ceil(ms / 1000));
     return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
   };
+  const ICON_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>';
+  const ICON_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg>';
 
+  function setTip() {
+    const list = TIPS[state.mode];
+    const el = $("tip");
+    el.textContent = list[Math.floor(Math.random() * list.length)];
+    el.classList.remove("swap"); void el.offsetWidth; el.classList.add("swap");
+  }
+
+  let lastBtn = "";
   function render() {
     const total = duration(state.mode);
     const t = fmt(state.remaining);
     $("time").textContent = t;
     const frac = Math.min(1, Math.max(0, 1 - state.remaining / total));
-    bar.style.strokeDashoffset = C * frac;
+    bar.style.strokeDashoffset = C * (1 - frac);
+    const a = frac * 2 * Math.PI - Math.PI / 2;
+    const kx = CX + R * Math.cos(a), ky = CX + R * Math.sin(a);
+    knob.setAttribute("cx", kx); knob.setAttribute("cy", ky);
+    glow.setAttribute("cx", kx); glow.setAttribute("cy", ky);
+    const lit = Math.round(frac * 60);
+    ticks.forEach((l, i) => l.classList.toggle("done", i < lit));
 
-    const status = state.running ? "진행 중" : (state.remaining < total ? "일시정지" : "대기 중");
-    $("label").innerHTML = `<strong>${MODES[state.mode]}</strong> · ${status}`;
-    $("startBtn").textContent = state.running ? "일시정지" : (state.remaining < total ? "계속" : "시작");
+    const paused = !state.running && state.remaining < total;
+    $("chip").textContent = MODES[state.mode] + (paused ? " · 일시정지" : "");
+    const btn = state.running ? ICON_PAUSE + "일시정지" : ICON_PLAY + (paused ? "계속" : "시작");
+    if (btn !== lastBtn) { $("startBtn").innerHTML = btn; lastBtn = btn; }
+
     document.body.dataset.mode = state.mode;
+    document.body.classList.toggle("running", state.running);
+    const idx = ["focus", "short", "long"].indexOf(state.mode);
+    $("tabInd").style.transform = `translateX(${idx * 100}%)`;
     document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.mode === state.mode)));
 
-    document.title = state.running || state.remaining < total
-      ? `${t} · ${MODES[state.mode]} — 포모도로 타이머`
-      : "포모도로 타이머";
+    document.title = state.running || paused ? `${t} · ${MODES[state.mode]} — 포모도로 타이머` : "포모도로 타이머";
 
     $("todayCount").textContent = today;
-    const dots = $("dots");
-    dots.innerHTML = "";
+    const tally = $("tally");
+    let html = "";
     for (let i = 0; i < settings.every; i++) {
-      const d = document.createElement("span");
-      d.className = "dot" + (i < state.cycleDone ? " on" : "");
-      dots.appendChild(d);
+      const cls = i < state.cycleDone ? "tomato" + (i === freshDot ? " fresh" : "") : "tomato empty";
+      html += `<svg class="${cls}" aria-hidden="true"><use href="#tomato"></use></svg>`;
     }
+    if (tally.innerHTML !== html) tally.innerHTML = html;
+    freshDot = -1;
     const left = settings.every - state.cycleDone;
     $("cycleText").textContent = state.mode === "long"
-      ? "긴 휴식 중입니다. 다음 집중부터 새 주기가 시작됩니다."
+      ? "긴 휴식 중이에요. 다음 집중부터 새 주기가 시작돼요."
       : `긴 휴식까지 집중 ${left}회 남음`;
   }
 
@@ -395,7 +513,6 @@ kbd { font-family: var(--font-display); border: 1px solid var(--line); border-bo
     if (state.remaining <= 0) { state.remaining = 0; finish(); return; }
     render();
   }
-
   function start() {
     unlockAudio();
     if (state.running) return;
@@ -415,56 +532,97 @@ kbd { font-family: var(--font-display); border: 1px solid var(--line); border-bo
     releaseWake();
     render();
   }
-  function stop() {
-    state.running = false;
-    clearInterval(state.tick);
-    releaseWake();
+  function stop() { state.running = false; clearInterval(state.tick); releaseWake(); }
+  function switchTo(mode) {
+    const changed = mode !== state.mode;
+    state.mode = mode;
+    state.remaining = duration(mode);
+    if (changed) setTip();
   }
   function setMode(mode) {
     stop();
     if (mode === "focus" && state.mode === "long") state.cycleDone = 0;
-    state.mode = mode;
-    state.remaining = duration(mode);
+    switchTo(mode);
     render();
   }
-  function reset() {
-    stop();
-    state.remaining = duration(state.mode);
-    render();
-  }
+  function reset() { stop(); state.remaining = duration(state.mode); render(); }
   function nextMode(countIt) {
     if (state.mode === "focus") {
       if (!countIt) return "short"; // skipped focus doesn't count toward the cycle
       today++; persist();
+      freshDot = state.cycleDone;
       state.cycleDone = Math.min(settings.every, state.cycleDone + 1);
       return state.cycleDone >= settings.every ? "long" : "short";
     }
     if (state.mode === "long") state.cycleDone = 0;
     return "focus";
   }
-  function advance(countIt) {
-    const auto = settings.auto && state.running;
-    stop();
-    const m = nextMode(countIt);
-    state.mode = m;
-    state.remaining = duration(m);
-    render();
-    if (auto) start();
-  }
   function finish() {
-    if (settings.sound) chime(state.mode);
-    state.running = true; // so advance() honours auto start
-    advance(true);
-    if (!settings.auto) render();
+    const ended = state.mode;
+    if (settings.sound) chime(ended);
+    const auto = settings.auto;
+    stop();
+    const m = nextMode(true);
+    switchTo(m);
+    render();
+    if (ended === "focus") {
+      confetti();
+      toast(m === "long" ? "집중 완료! 긴 휴식을 즐겨요" : "집중 완료! 잠깐 쉬어 가요");
+    } else {
+      toast("휴식 끝! 다시 집중해 볼까요?");
+    }
+    if (auto) start();
   }
   function skip() {
     const wasRunning = state.running;
     stop();
-    const m = nextMode(false);
-    state.mode = m;
-    state.remaining = duration(m);
+    switchTo(nextMode(false));
     render();
     if (wasRunning && settings.auto) start();
+  }
+
+  // Toast
+  let toastT = null;
+  function toast(msg) {
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toastT);
+    toastT = setTimeout(() => el.classList.remove("show"), 3200);
+  }
+
+  // Confetti (canvas)
+  const cv = $("confetti"), cx = cv.getContext("2d");
+  let parts = [], raf = null;
+  function confetti() {
+    if (reduceMotion) return;
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const cs = getComputedStyle(document.documentElement);
+    const colors = ["--focus", "--focus-2", "--short", "--long-2", "--leaf"].map(v => cs.getPropertyValue(v).trim());
+    for (let i = 0; i < 140; i++) {
+      parts.push({
+        x: innerWidth / 2, y: innerHeight * 0.38,
+        vx: (Math.random() - .5) * 14, vy: -Math.random() * 13 - 3,
+        w: 6 + Math.random() * 6, h: 4 + Math.random() * 4,
+        r: Math.random() * Math.PI, vr: (Math.random() - .5) * .3,
+        c: colors[i % colors.length], life: 0
+      });
+    }
+    if (!raf) raf = requestAnimationFrame(drawConfetti);
+  }
+  function drawConfetti() {
+    cx.clearRect(0, 0, innerWidth, innerHeight);
+    parts = parts.filter(p => p.y < innerHeight + 20 && p.life < 240);
+    for (const p of parts) {
+      p.vy += .32; p.vx *= .985; p.x += p.vx; p.y += p.vy; p.r += p.vr; p.life++;
+      cx.save(); cx.translate(p.x, p.y); cx.rotate(p.r);
+      cx.fillStyle = p.c; cx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      cx.restore();
+    }
+    raf = parts.length ? requestAnimationFrame(drawConfetti) : null;
+    if (!raf) cx.clearRect(0, 0, innerWidth, innerHeight);
   }
 
   // Web Audio chime
@@ -516,7 +674,7 @@ kbd { font-family: var(--font-display); border: 1px solid var(--line); border-bo
       if (v > max) v = max;
       el.value = v;
       settings[k] = v;
-      if (k === "every") state.cycleDone = Math.min(state.cycleDone, v - 1 < 0 ? 0 : v - 1);
+      if (k === "every") state.cycleDone = Math.min(state.cycleDone, Math.max(0, v - 1));
       persist();
       if (k === state.mode) reset(); else render();
     });
@@ -537,9 +695,7 @@ kbd { font-family: var(--font-display); border: 1px solid var(--line); border-bo
   $("setSound").addEventListener("change", e => { settings.sound = e.target.checked; persist(); });
   $("settingsForm").addEventListener("submit", e => e.preventDefault());
   $("testSound").addEventListener("click", () => chime("focus"));
-  $("resetCount").addEventListener("click", () => {
-    today = 0; state.cycleDone = 0; persist(); render();
-  });
+  $("resetCount").addEventListener("click", () => { today = 0; state.cycleDone = 0; persist(); render(); });
 
   // Controls
   $("startBtn").addEventListener("click", () => state.running ? pause() : start());
@@ -555,7 +711,7 @@ kbd { font-family: var(--font-display); border: 1px solid var(--line); border-bo
     else if (e.key === "s" || e.key === "S") skip();
   });
   document.addEventListener("visibilitychange", () => {
-    if (state.running) { if (document.visibilityState === "visible") { requestWake(); loop(); } }
+    if (state.running && document.visibilityState === "visible") { requestWake(); loop(); }
   });
 
   render();
