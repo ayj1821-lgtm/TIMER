@@ -1,0 +1,563 @@
+<title>토마토 집중 타이머</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap">
+<style>
+/* Layout: one centered column — mode tabs, ring timer, controls, cycle dots, collapsible settings */
+:root {
+  --bg: #f6f3f1;
+  --surface: #ffffff;
+  --fg: #1f1a19;
+  --muted: #6e6462;
+  --line: #e4dcd9;
+  --track: #ece5e2;
+  --focus: #d4482f;
+  --short: #2f8f6b;
+  --long: #3a6fb8;
+  --accent: var(--focus);
+  --on-accent: #ffffff;
+  --font-display: "Space Grotesk", "Noto Sans KR", system-ui, sans-serif;
+  --font-body: "Noto Sans KR", system-ui, -apple-system, "Malgun Gothic", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161312; --surface: #211c1b; --fg: #f2ecea; --muted: #a59a97;
+    --line: #362f2d; --track: #2e2725;
+    --focus: #ef6a50; --short: #4fbf94; --long: #6c9ce6; --on-accent: #1a1211;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161312; --surface: #211c1b; --fg: #f2ecea; --muted: #a59a97;
+  --line: #362f2d; --track: #2e2725;
+  --focus: #ef6a50; --short: #4fbf94; --long: #6c9ce6; --on-accent: #1a1211;
+  color-scheme: dark;
+}
+body[data-mode="focus"] { --accent: var(--focus); }
+body[data-mode="short"] { --accent: var(--short); }
+body[data-mode="long"]  { --accent: var(--long); }
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-block: 24px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  transition: background-color .4s;
+}
+.wrap {
+  max-width: 440px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+header { width: 100%; display: flex; justify-content: space-between; align-items: baseline; }
+h1 { font-family: var(--font-display); font-size: 18px; font-weight: 700; margin: 0; letter-spacing: -.01em; }
+.today { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.today b { color: var(--fg); font-weight: 700; }
+
+.tabs {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+  width: 100%; padding: 4px; border-radius: 999px;
+  background: var(--track);
+}
+.tab {
+  font: inherit; font-size: 14px; font-weight: 500;
+  border: 0; border-radius: 999px; padding: 8px 4px;
+  background: transparent; color: var(--muted); cursor: pointer;
+  transition: background-color .2s, color .2s;
+}
+.tab[aria-selected="true"] { background: var(--surface); color: var(--accent); font-weight: 700; box-shadow: 0 1px 2px rgb(0 0 0 / .08); }
+
+.ring-box { position: relative; width: min(300px, 78vw); aspect-ratio: 1; max-width: 100%; }
+.ring-box svg { width: 100%; height: 100%; transform: rotate(-90deg); display: block; }
+.ring-track { fill: none; stroke: var(--track); stroke-width: 10; }
+.ring-bar { fill: none; stroke: var(--accent); stroke-width: 10; stroke-linecap: round; transition: stroke .4s; }
+.ring-inner {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 4px; text-align: center;
+}
+.time {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: clamp(52px, 17vw, 76px); line-height: 1;
+  letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+}
+.label { font-size: 14px; color: var(--muted); }
+.label strong { color: var(--accent); font-weight: 700; }
+
+.controls { display: flex; align-items: center; justify-content: center; gap: 16px; }
+.btn {
+  font: inherit; cursor: pointer; border: 1px solid var(--line);
+  background: var(--surface); color: var(--fg);
+  border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn-round { width: 52px; height: 52px; font-size: 13px; flex-direction: column; gap: 0; }
+.btn-round svg { width: 20px; height: 20px; }
+.btn-round span { font-size: 11px; color: var(--muted); }
+.btn-main {
+  min-width: 132px; height: 60px; padding: 0 24px;
+  background: var(--accent); color: var(--on-accent); border-color: transparent;
+  font-size: 17px; font-weight: 700; transition: background-color .4s, transform .1s;
+}
+.btn-main:active { transform: scale(.97); }
+.btn:focus-visible, .tab:focus-visible, summary:focus-visible, input:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+
+.cycle { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.dots { display: flex; gap: 8px; }
+.dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--focus); background: transparent; }
+.dot.on { background: var(--focus); }
+.cycle p { margin: 0; font-size: 13px; color: var(--muted); }
+
+details {
+  width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+}
+summary {
+  cursor: pointer; padding: 14px 16px; font-weight: 700; font-size: 15px;
+  list-style: none; display: flex; justify-content: space-between; align-items: center;
+}
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "＋"; color: var(--muted); font-weight: 400; }
+details[open] summary::after { content: "－"; }
+.settings { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+.group-title {
+  margin: 8px 0 0; font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  color: var(--muted);
+}
+.list {
+  list-style: none; margin: 0; padding: 0;
+  background: var(--bg); border-radius: 12px;
+}
+.item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; min-height: 56px;
+}
+.item + .item { border-top: 1px solid var(--line); }
+.swatch {
+  flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--c);
+}
+.swatch.ring { background: transparent; border: 2px solid var(--c); }
+.item-label {
+  flex: 1; min-width: 0; font-size: 15px; font-weight: 500; cursor: pointer;
+  display: flex; flex-direction: column; line-height: 1.35;
+}
+.item-label small { font-size: 12px; font-weight: 400; color: var(--muted); }
+
+.stepper {
+  flex: none; display: flex; align-items: center;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+  padding: 3px;
+}
+.step {
+  width: 30px; height: 30px; border: 0; border-radius: 50%;
+  background: transparent; color: var(--muted); cursor: pointer;
+  font: inherit; font-size: 18px; line-height: 1;
+  display: grid; place-items: center;
+  transition: background-color .15s, color .15s;
+}
+.step:hover { background: var(--track); color: var(--fg); }
+.step:active { transform: scale(.92); }
+.step:disabled { opacity: .35; cursor: default; background: transparent; }
+.stepper input {
+  width: 2.4em; border: 0; background: transparent; color: var(--fg);
+  font-family: var(--font-display); font-size: 17px; font-weight: 500;
+  font-variant-numeric: tabular-nums; text-align: right; padding: 0;
+  -moz-appearance: textfield; appearance: textfield;
+}
+.stepper input::-webkit-outer-spin-button,
+.stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.suffix { font-size: 12px; color: var(--muted); margin: 0 4px 0 2px; }
+
+.switch {
+  flex: none; appearance: none; -webkit-appearance: none; margin: 0;
+  width: 44px; height: 26px; border-radius: 999px; cursor: pointer;
+  background: var(--line); position: relative; transition: background-color .2s;
+}
+.switch::after {
+  content: ""; position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / .25); transition: transform .2s;
+}
+.switch:checked { background: var(--accent); }
+.switch:checked::after { transform: translateX(18px); }
+.switch:focus-visible, .step:focus-visible, .link-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.link-btn {
+  flex: none; font: inherit; font-size: 13px; font-weight: 500;
+  border: 0; background: transparent; color: var(--accent); cursor: pointer;
+  padding: 6px 8px; border-radius: 8px;
+}
+.link-btn:hover { background: var(--track); }
+.link-btn.danger { color: var(--muted); }
+.link-btn.danger:hover { color: var(--focus); }
+.foot { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; margin-top: 4px; }
+.note { font-size: 12px; color: var(--muted); margin: 0; }
+.kbd { font-size: 12px; color: var(--muted); text-align: center; margin: 0; }
+kbd { font-family: var(--font-display); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>토마토 집중 타이머</h1>
+    <div class="today">오늘 완료 <b id="todayCount">0</b>회</div>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="세션 종류">
+    <button class="tab" role="tab" id="tab-focus" data-mode="focus" aria-selected="true">집중</button>
+    <button class="tab" role="tab" id="tab-short" data-mode="short" aria-selected="false">짧은 휴식</button>
+    <button class="tab" role="tab" id="tab-long" data-mode="long" aria-selected="false">긴 휴식</button>
+  </div>
+
+  <div class="ring-box">
+    <svg viewBox="0 0 220 220" aria-hidden="true">
+      <circle class="ring-track" cx="110" cy="110" r="100"></circle>
+      <circle class="ring-bar" id="ringBar" cx="110" cy="110" r="100"></circle>
+    </svg>
+    <div class="ring-inner">
+      <div class="time" id="time" role="timer" aria-live="off">25:00</div>
+      <div class="label" id="label"><strong>집중</strong> · 대기 중</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-round" id="resetBtn" aria-label="리셋" title="리셋">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path></svg>
+      <span>리셋</span>
+    </button>
+    <button class="btn btn-main" id="startBtn">시작</button>
+    <button class="btn btn-round" id="skipBtn" aria-label="건너뛰기" title="건너뛰기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l10 7-10 7z"></path><path d="M19 5v14"></path></svg>
+      <span>건너뛰기</span>
+    </button>
+  </div>
+
+  <div class="cycle">
+    <div class="dots" id="dots"></div>
+    <p id="cycleText">긴 휴식까지 집중 4회 남음</p>
+  </div>
+
+  <details id="settingsBox">
+    <summary>시간 설정</summary>
+    <form class="settings" id="settingsForm">
+      <p class="group-title">시간</p>
+      <ul class="list">
+        <li class="item">
+          <span class="swatch" style="--c: var(--focus)"></span>
+          <label class="item-label" for="setFocus">집중</label>
+          <div class="stepper">
+            <button type="button" class="step" data-for="setFocus" data-d="-1" aria-label="집중 1분 줄이기">−</button>
+            <input id="setFocus" type="number" min="1" max="180" step="1" inputmode="numeric" value="25">
+            <span class="suffix">분</span>
+            <button type="button" class="step" data-for="setFocus" data-d="1" aria-label="집중 1분 늘리기">+</button>
+          </div>
+        </li>
+        <li class="item">
+          <span class="swatch" style="--c: var(--short)"></span>
+          <label class="item-label" for="setShort">짧은 휴식</label>
+          <div class="stepper">
+            <button type="button" class="step" data-for="setShort" data-d="-1" aria-label="짧은 휴식 1분 줄이기">−</button>
+            <input id="setShort" type="number" min="1" max="60" step="1" inputmode="numeric" value="5">
+            <span class="suffix">분</span>
+            <button type="button" class="step" data-for="setShort" data-d="1" aria-label="짧은 휴식 1분 늘리기">+</button>
+          </div>
+        </li>
+        <li class="item">
+          <span class="swatch" style="--c: var(--long)"></span>
+          <label class="item-label" for="setLong">긴 휴식</label>
+          <div class="stepper">
+            <button type="button" class="step" data-for="setLong" data-d="-1" aria-label="긴 휴식 1분 줄이기">−</button>
+            <input id="setLong" type="number" min="1" max="90" step="1" inputmode="numeric" value="15">
+            <span class="suffix">분</span>
+            <button type="button" class="step" data-for="setLong" data-d="1" aria-label="긴 휴식 1분 늘리기">+</button>
+          </div>
+        </li>
+        <li class="item">
+          <span class="swatch ring" style="--c: var(--focus)"></span>
+          <label class="item-label" for="setEvery">긴 휴식 간격<small>집중 몇 회마다</small></label>
+          <div class="stepper">
+            <button type="button" class="step" data-for="setEvery" data-d="-1" aria-label="간격 1회 줄이기">−</button>
+            <input id="setEvery" type="number" min="2" max="12" step="1" inputmode="numeric" value="4">
+            <span class="suffix">회</span>
+            <button type="button" class="step" data-for="setEvery" data-d="1" aria-label="간격 1회 늘리기">+</button>
+          </div>
+        </li>
+      </ul>
+
+      <p class="group-title">동작</p>
+      <ul class="list">
+        <li class="item">
+          <label class="item-label" for="setAuto">다음 세션 자동 시작<small>끝나면 바로 다음 세션을 시작합니다</small></label>
+          <input type="checkbox" class="switch" role="switch" id="setAuto" checked>
+        </li>
+        <li class="item">
+          <label class="item-label" for="setSound">종료 알림음<small>세션이 끝날 때 소리로 알려 줍니다</small></label>
+          <button type="button" class="link-btn" id="testSound">들어보기</button>
+          <input type="checkbox" class="switch" role="switch" id="setSound" checked>
+        </li>
+      </ul>
+
+      <div class="foot">
+        <p class="note">설정은 이 브라우저에 저장됩니다.</p>
+        <button type="button" class="link-btn danger" id="resetCount">완료 횟수 초기화</button>
+      </div>
+    </form>
+  </details>
+
+  <p class="kbd"><kbd>Space</kbd> 시작/일시정지 · <kbd>R</kbd> 리셋 · <kbd>S</kbd> 건너뛰기</p>
+</div>
+
+<script>
+(() => {
+  const MODES = { focus: "집중", short: "짧은 휴식", long: "긴 휴식" };
+  const STORE_KEY = "pomodoro-v1";
+  const $ = id => document.getElementById(id);
+
+  const store = {
+    load() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; } },
+    save(data) { try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch {} }
+  };
+  const todayKey = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  };
+
+  const saved = store.load();
+  const settings = Object.assign({ focus: 25, short: 5, long: 15, every: 4, auto: true, sound: true }, saved.settings || {});
+  let today = saved.day === todayKey() ? (saved.today || 0) : 0;
+
+  const state = {
+    mode: "focus",
+    cycleDone: 0,            // focus sessions finished in the current long-break cycle
+    remaining: settings.focus * 60 * 1000,
+    endAt: null,             // timestamp while running
+    running: false,
+    tick: null
+  };
+
+  const persist = () => store.save({ settings, day: todayKey(), today });
+  const duration = mode => settings[mode] * 60 * 1000;
+
+  // Ring geometry
+  const R = 100, C = 2 * Math.PI * R;
+  const bar = $("ringBar");
+  bar.style.strokeDasharray = C;
+
+  const fmt = ms => {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  };
+
+  function render() {
+    const total = duration(state.mode);
+    const t = fmt(state.remaining);
+    $("time").textContent = t;
+    const frac = Math.min(1, Math.max(0, 1 - state.remaining / total));
+    bar.style.strokeDashoffset = C * frac;
+
+    const status = state.running ? "진행 중" : (state.remaining < total ? "일시정지" : "대기 중");
+    $("label").innerHTML = `<strong>${MODES[state.mode]}</strong> · ${status}`;
+    $("startBtn").textContent = state.running ? "일시정지" : (state.remaining < total ? "계속" : "시작");
+    document.body.dataset.mode = state.mode;
+    document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.mode === state.mode)));
+
+    document.title = state.running || state.remaining < total
+      ? `${t} · ${MODES[state.mode]} — 토마토 집중 타이머`
+      : "토마토 집중 타이머";
+
+    $("todayCount").textContent = today;
+    const dots = $("dots");
+    dots.innerHTML = "";
+    for (let i = 0; i < settings.every; i++) {
+      const d = document.createElement("span");
+      d.className = "dot" + (i < state.cycleDone ? " on" : "");
+      dots.appendChild(d);
+    }
+    const left = settings.every - state.cycleDone;
+    $("cycleText").textContent = state.mode === "long"
+      ? "긴 휴식 중입니다. 다음 집중부터 새 주기가 시작됩니다."
+      : `긴 휴식까지 집중 ${left}회 남음`;
+  }
+
+  function loop() {
+    state.remaining = state.endAt - Date.now();
+    if (state.remaining <= 0) { state.remaining = 0; finish(); return; }
+    render();
+  }
+
+  function start() {
+    unlockAudio();
+    if (state.running) return;
+    if (state.remaining <= 0) state.remaining = duration(state.mode);
+    state.running = true;
+    state.endAt = Date.now() + state.remaining;
+    clearInterval(state.tick);
+    state.tick = setInterval(loop, 250);
+    requestWake();
+    render();
+  }
+  function pause() {
+    if (!state.running) return;
+    state.remaining = Math.max(0, state.endAt - Date.now());
+    state.running = false;
+    clearInterval(state.tick);
+    releaseWake();
+    render();
+  }
+  function stop() {
+    state.running = false;
+    clearInterval(state.tick);
+    releaseWake();
+  }
+  function setMode(mode) {
+    stop();
+    if (mode === "focus" && state.mode === "long") state.cycleDone = 0;
+    state.mode = mode;
+    state.remaining = duration(mode);
+    render();
+  }
+  function reset() {
+    stop();
+    state.remaining = duration(state.mode);
+    render();
+  }
+  function nextMode(countIt) {
+    if (state.mode === "focus") {
+      if (!countIt) return "short"; // skipped focus doesn't count toward the cycle
+      today++; persist();
+      state.cycleDone = Math.min(settings.every, state.cycleDone + 1);
+      return state.cycleDone >= settings.every ? "long" : "short";
+    }
+    if (state.mode === "long") state.cycleDone = 0;
+    return "focus";
+  }
+  function advance(countIt) {
+    const auto = settings.auto && state.running;
+    stop();
+    const m = nextMode(countIt);
+    state.mode = m;
+    state.remaining = duration(m);
+    render();
+    if (auto) start();
+  }
+  function finish() {
+    if (settings.sound) chime(state.mode);
+    state.running = true; // so advance() honours auto start
+    advance(true);
+    if (!settings.auto) render();
+  }
+  function skip() {
+    const wasRunning = state.running;
+    stop();
+    const m = nextMode(false);
+    state.mode = m;
+    state.remaining = duration(m);
+    render();
+    if (wasRunning && settings.auto) start();
+  }
+
+  // Web Audio chime
+  let ctx = null;
+  function unlockAudio() {
+    try {
+      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === "suspended") ctx.resume();
+    } catch {}
+  }
+  function chime(mode) {
+    unlockAudio();
+    if (!ctx) return;
+    // focus ended → rising notes (time to rest); break ended → descending (back to work)
+    const notes = mode === "focus" ? [659.25, 783.99, 1046.5] : [1046.5, 783.99, 659.25];
+    const t0 = ctx.currentTime + 0.05;
+    for (let r = 0; r < 2; r++) {
+      notes.forEach((f, i) => {
+        const t = t0 + r * 0.9 + i * 0.18;
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = "sine"; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.35, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+        o.connect(g).connect(ctx.destination);
+        o.start(t); o.stop(t + 0.65);
+      });
+    }
+  }
+
+  // Keep the screen awake while running, where allowed
+  let wake = null;
+  async function requestWake() {
+    try { if ("wakeLock" in navigator && !wake) wake = await navigator.wakeLock.request("screen"); } catch { wake = null; }
+  }
+  function releaseWake() { try { wake && wake.release(); } catch {} wake = null; }
+
+  // Settings form
+  const fields = { focus: $("setFocus"), short: $("setShort"), long: $("setLong"), every: $("setEvery") };
+  Object.entries(fields).forEach(([k, el]) => { el.value = settings[k]; });
+  $("setAuto").checked = settings.auto;
+  $("setSound").checked = settings.sound;
+
+  Object.entries(fields).forEach(([k, el]) => {
+    el.addEventListener("change", () => {
+      const min = +el.min, max = +el.max;
+      let v = Math.round(+el.value);
+      if (!Number.isFinite(v) || v < min) v = min;
+      if (v > max) v = max;
+      el.value = v;
+      settings[k] = v;
+      if (k === "every") state.cycleDone = Math.min(state.cycleDone, v - 1 < 0 ? 0 : v - 1);
+      persist();
+      if (k === state.mode) reset(); else render();
+    });
+  });
+  const syncSteppers = () => document.querySelectorAll(".step").forEach(b => {
+    const el = $(b.dataset.for), d = +b.dataset.d;
+    b.disabled = d < 0 ? +el.value <= +el.min : +el.value >= +el.max;
+  });
+  document.querySelectorAll(".step").forEach(b => b.addEventListener("click", () => {
+    const el = $(b.dataset.for);
+    el.value = (+el.value || 0) + +b.dataset.d;
+    el.dispatchEvent(new Event("change"));
+  }));
+  Object.values(fields).forEach(el => el.addEventListener("change", syncSteppers));
+  syncSteppers();
+
+  $("setAuto").addEventListener("change", e => { settings.auto = e.target.checked; persist(); });
+  $("setSound").addEventListener("change", e => { settings.sound = e.target.checked; persist(); });
+  $("settingsForm").addEventListener("submit", e => e.preventDefault());
+  $("testSound").addEventListener("click", () => chime("focus"));
+  $("resetCount").addEventListener("click", () => {
+    today = 0; state.cycleDone = 0; persist(); render();
+  });
+
+  // Controls
+  $("startBtn").addEventListener("click", () => state.running ? pause() : start());
+  $("resetBtn").addEventListener("click", reset);
+  $("skipBtn").addEventListener("click", skip);
+  document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
+
+  document.addEventListener("keydown", e => {
+    if (e.target.closest("input, textarea, select")) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.code === "Space") { e.preventDefault(); state.running ? pause() : start(); }
+    else if (e.key === "r" || e.key === "R") reset();
+    else if (e.key === "s" || e.key === "S") skip();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (state.running) { if (document.visibilityState === "visible") { requestWake(); loop(); } }
+  });
+
+  render();
+})();
+</script>
