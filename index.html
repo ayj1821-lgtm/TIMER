@@ -1,4 +1,4 @@
-<title>토마토 집중 타이머</title>
+<title>포모도로 타이머</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -210,7 +210,7 @@ kbd { font-family: var(--font-display); border: 1px solid var(--line); border-bo
 
 <div class="wrap">
   <header>
-    <h1>토마토 집중 타이머</h1>
+    <h1>포모도로 타이머</h1>
     <div class="today">오늘 완료 <b id="todayCount">0</b>회</div>
   </header>
 
@@ -373,8 +373,8 @@ kbd { font-family: var(--font-display); border: 1px solid var(--line); border-bo
     document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.mode === state.mode)));
 
     document.title = state.running || state.remaining < total
-      ? `${t} · ${MODES[state.mode]} — 토마토 집중 타이머`
-      : "토마토 집중 타이머";
+      ? `${t} · ${MODES[state.mode]} — 포모도로 타이머`
+      : "포모도로 타이머";
 
     $("todayCount").textContent = today;
     const dots = $("dots");
